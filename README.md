@@ -163,11 +163,15 @@ This will start both services. The backend will be at `http://localhost:8000` an
 ### Document Upload
 Upload your syllabus documents, notes, or textbooks through the web interface.
 
+![Document Upload](upload_document.png)
+
 ### Chat Interface
 Ask questions like:
 - "Explain the concept of photosynthesis"
 - "What are the key points in chapter 3?"
 - "Summarize the main topics covered"
+
+![Chat with AI](chat_with_ai.png)
 
 ### Quiz Generation
 Generate quizzes with:
@@ -175,12 +179,18 @@ Generate quizzes with:
 - Short answer questions
 - Questions based on specific topics or chapters
 
+![Quiz Generator](quiz_generator.png)
+
+![Quiz Generator Results](quiz_generator_2.png)
+
 ### Progress Analytics
 View:
 - Total questions attempted
 - Accuracy percentage
 - Weak areas identified
 - Learning progress over time
+
+![Progress Report](progress_report.png)
 
 ## Configuration
 
