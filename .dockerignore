@@ -1,0 +1,49 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+
+# Frontend (not needed for backend)
+frontend/
+
+# Documentation
+*.md
+QUICKSTART.md
+
+# Scripts
+*.sh
+*.bat
+
+# Data directories (will be created in container)
+backend/uploads/*
+backend/progress_data/*
+backend/vector_store/*
+
+# Environment files (should be passed as env vars or mounted)
+.env
+.env.local
+
+# Setup files
+setup.py
+

@@ -12,17 +12,18 @@ An AI-powered study assistant that helps students understand, practice, and revi
 
 ## Technology Stack
 
-- **Backend**: FastAPI
-- **Frontend**: Streamlit
+- **Backend**: FastAPI (Python)
+- **Frontend**: React (Vite)
 - **RAG Pipeline**: LangChain
 - **Vector Database**: ChromaDB
-- **Embeddings**: Sentence-Transformers
-- **LLM**: OpenAI (configurable to use Llama-3/Mistral)
+- **Embeddings**: Sentence-Transformers (all-MiniLM-L6-v2)
+- **LLM**: Ollama (llama3.2:latest)
+- **Deployment**: Docker & Docker Compose support
 
 ## Project Structure
 
 ```
-cic/
+ai_study/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py
@@ -31,12 +32,22 @@ cic/
 │   │   ├── rag_pipeline.py  # RAG pipeline implementation
 │   │   ├── quiz_generator.py # Quiz generation logic
 │   │   └── progress_tracker.py # Progress tracking
-│   └── uploads/             # Uploaded documents storage
+│   ├── uploads/             # Uploaded documents storage
+│   ├── progress_data/       # Quiz results and progress data
+│   └── vector_store/        # ChromaDB vector store
 ├── frontend/
-│   └── app.py               # Streamlit application
-├── vector_store/            # ChromaDB vector store
-├── .env.example             # Environment variables template
-├── requirements.txt         # Python dependencies
+│   ├── src/                 # React frontend
+│   │   ├── components/      # React components (Chat, Quiz, Progress, DocumentUpload)
+│   │   ├── services/        # API service layer
+│   │   ├── App.jsx          # Main React app
+│   │   └── main.jsx         # React entry point
+│   ├── package.json         # Node.js dependencies
+│   ├── vite.config.js       # Vite configuration
+│   └── index.html           # HTML template
+├── docker-compose.yml       # Docker Compose configuration
+├── Dockerfile              # Backend Dockerfile
+├── env.example             # Environment variables template
+├── requirements.txt        # Python dependencies
 └── README.md               # This file
 ```
 
@@ -48,32 +59,46 @@ cic/
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
+### 2. Install and Setup Ollama
 
-Create a `.env` file in the root directory:
+First, install Ollama from https://ollama.ai, then pull the required model:
+
+```bash
+ollama pull llama3.2:latest
+```
+
+Make sure Ollama is running (it should start automatically on installation).
+
+### 3. Environment Configuration
+
+Copy the example environment file and configure it:
+
+```bash
+cp env.example .env
+```
+
+Edit `.env` file with your configuration:
 
 ```env
-OPENAI_API_KEY=your_openai_api_key_here
 EMBEDDING_MODEL=all-MiniLM-L6-v2
-LLM_MODEL=gpt-3.5-turbo
-VECTOR_STORE_PATH=./vector_store
+LLM_MODEL=llama3.2:latest
+OLLAMA_BASE_URL=http://localhost:11434
+VECTOR_STORE_PATH=./backend/vector_store
 UPLOAD_DIR=./backend/uploads
 ```
 
-### 3. Run the Backend
+### 4. Run the Backend
 
-**Windows:**
+**Option 1: Using Docker (Recommended)**
+
 ```bash
-start_backend.bat
+docker compose up -d --build backend
 ```
 
-**Linux/Mac:**
-```bash
-chmod +x start_backend.sh
-./start_backend.sh
-```
+The API will be available at `http://localhost:8000`
 
-**Or manually:**
+**Option 2: Manual Setup**
+
 ```bash
 cd backend
 uvicorn app.main:app --reload --port 8000
@@ -81,27 +106,29 @@ uvicorn app.main:app --reload --port 8000
 
 The API will be available at `http://localhost:8000`
 
-### 4. Run the Frontend
+### 5. Run the Frontend
 
-**Windows:**
+**React Frontend:**
+
 ```bash
-start_frontend.bat
+cd frontend
+npm install
+npm run dev
 ```
 
-**Linux/Mac:**
-```bash
-chmod +x start_frontend.sh
-./start_frontend.sh
-```
-
-**Or manually:**
-```bash
-streamlit run frontend/app.py
-```
-
-The frontend will be available at `http://localhost:8501`
+The React frontend will be available at `http://localhost:5173`
 
 > **Note**: Make sure the backend is running before starting the frontend!
+
+### 6. Using Docker Compose (Full Stack)
+
+To run both backend and frontend with Docker:
+
+```bash
+docker compose up -d --build
+```
+
+This will start both services. The backend will be at `http://localhost:8000` and frontend at the configured port.
 
 ## API Endpoints
 
@@ -157,11 +184,60 @@ View:
 
 ## Configuration
 
-The system supports multiple LLM providers. To use a different model:
+The system uses Ollama for LLM and local embeddings. To configure:
 
-1. Update the `.env` file with your API key
-2. Modify `backend/app/rag_pipeline.py` to use the desired LLM provider
-3. Supported providers: OpenAI, Llama-3 (via Ollama), Mistral
+1. Install Ollama from https://ollama.ai
+2. Pull the required model: `ollama pull llama3.2:latest`
+3. Ensure Ollama is running (default: http://localhost:11434)
+4. The default model is `llama3.2:latest` which can be changed in the `.env` file
+5. You can change the Ollama base URL if running on a different host/port
+
+### Docker Configuration
+
+When using Docker, the backend uses `network_mode: host` to access Ollama running on your host machine. Make sure Ollama is running on your host before starting the Docker container.
+
+### Storage Locations
+
+- **Uploaded Documents**: `backend/uploads/`
+- **Quiz Data**: `backend/progress_data/quizzes.json`
+- **Progress Statistics**: `backend/progress_data/progress.json`
+- **Vector Store**: `backend/vector_store/` (ChromaDB database)
+
+## Troubleshooting
+
+### Backend won't start
+- Make sure port 8000 is not in use
+- Check that all dependencies are installed: `pip install -r requirements.txt`
+- Verify Ollama is running: `ollama list`
+- Check that the model is pulled: `ollama list` should show `llama3.2:latest`
+
+### Frontend can't connect to backend
+- Ensure the backend is running on port 8000
+- Check the API_BASE_URL in `frontend/src/services/api.js` matches your backend URL
+- If using Docker, ensure network configuration is correct
+
+### Document upload fails
+- Check file format (PDF, DOCX, TXT only)
+- Ensure file is not corrupted
+- Check backend logs for error messages
+- Verify `backend/uploads/` directory exists and is writable
+
+### Quiz generation fails
+- Make sure you have uploaded at least one document
+- Verify Ollama is running and the model is available
+- Try with fewer questions first
+- Check Ollama logs if the model fails to respond
+
+### Docker issues
+- If Ollama connection fails in Docker, ensure Ollama is running on the host
+- For Linux, Docker uses `network_mode: host` to access host services
+- Check Docker logs: `docker logs ai-study-backend`
+
+## API Documentation
+
+Once the backend is running, visit:
+- **Interactive API Docs**: http://localhost:8000/docs
+- **Alternative Docs**: http://localhost:8000/redoc
 
 ## License
 

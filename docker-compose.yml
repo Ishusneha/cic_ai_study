@@ -1,0 +1,26 @@
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ai-study-backend
+    network_mode: host
+    environment:
+      - PYTHONPATH=/app
+      - UPLOAD_DIR=/app/backend/uploads
+      - VECTOR_STORE_PATH=/app/backend/vector_store
+      - EMBEDDING_MODEL=${EMBEDDING_MODEL:-all-MiniLM-L6-v2}
+      - LLM_MODEL=${LLM_MODEL:-llama3.2:latest}
+      - OLLAMA_BASE_URL=${OLLAMA_BASE_URL:-http://localhost:11434}
+    volumes:
+      - ./backend:/app/backend
+      - ./backend/uploads:/app/backend/uploads
+      - ./backend/progress_data:/app/backend/progress_data
+      - ./backend/vector_store:/app/backend/vector_store
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s

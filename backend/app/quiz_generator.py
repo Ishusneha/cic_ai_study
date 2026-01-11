@@ -1,6 +1,6 @@
 import os
 from typing import List, Dict, Any
-from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from dotenv import load_dotenv
@@ -15,16 +15,14 @@ load_dotenv()
 class QuizGenerator:
     def __init__(self, rag_pipeline: RAGPipeline):
         self.rag_pipeline = rag_pipeline
-        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self.llm_model = os.getenv("LLM_MODEL", "llama3.2:latest")
+        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         
-        if self.openai_api_key:
-            self.llm = ChatOpenAI(
-                model_name=os.getenv("LLM_MODEL", "gpt-3.5-turbo"),
-                temperature=0.7,
-                openai_api_key=self.openai_api_key
-            )
-        else:
-            raise ValueError("OpenAI API key is required")
+        self.llm = ChatOllama(
+            model=self.llm_model,
+            temperature=0.7,
+            base_url=self.ollama_base_url
+        )
     
     def generate_quiz(
         self,

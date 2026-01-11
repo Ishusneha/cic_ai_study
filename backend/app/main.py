@@ -113,13 +113,17 @@ async def chat(request: ChatRequest):
             "timestamp": datetime.now().isoformat()
         })
         
-        # Format sources
+        # Format sources as strings
         sources = []
         for source in result.get("sources", []):
-            sources.append({
-                "content": source.get("content", ""),
-                "metadata": source.get("metadata", {})
-            })
+            # Format source as a string with content and metadata
+            content = source.get("content", "")
+            metadata = source.get("metadata", {})
+            if metadata:
+                source_str = f"{content} [Source: {metadata.get('source', 'Unknown')}]"
+            else:
+                source_str = content
+            sources.append(source_str)
         
         return ChatResponse(
             answer=result["answer"],

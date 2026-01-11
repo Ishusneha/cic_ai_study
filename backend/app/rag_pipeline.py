@@ -4,7 +4,7 @@ from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, Docx2txtLoader
 from langchain_community.vectorstores import Chroma
 from langchain_community.embeddings import HuggingFaceEmbeddings
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain.prompts import ChatPromptTemplate
 from langchain_core.documents import Document
 from dotenv import load_dotenv
@@ -15,28 +15,21 @@ load_dotenv()
 class RAGPipeline:
     def __init__(self):
         self.embedding_model = os.getenv("EMBEDDING_MODEL", "all-MiniLM-L6-v2")
-        self.llm_model = os.getenv("LLM_MODEL", "gpt-3.5-turbo")
+        self.llm_model = os.getenv("LLM_MODEL", "llama3.2:latest")
         self.vector_store_path = os.getenv("VECTOR_STORE_PATH", "./vector_store")
-        self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self.ollama_base_url = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
         
-        # Initialize embeddings
-        if self.openai_api_key:
-            self.embeddings = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-        else:
-            # Use local embeddings as fallback
-            self.embeddings = HuggingFaceEmbeddings(
-                model_name=self.embedding_model
-            )
+        # Initialize embeddings - use local embeddings
+        self.embeddings = HuggingFaceEmbeddings(
+            model_name=self.embedding_model
+        )
         
-        # Initialize LLM
-        if self.openai_api_key:
-            self.llm = ChatOpenAI(
-                model_name=self.llm_model,
-                temperature=0.7,
-                openai_api_key=self.openai_api_key
-            )
-        else:
-            raise ValueError("OpenAI API key is required. Please set OPENAI_API_KEY in .env file")
+        # Initialize LLM with Ollama
+        self.llm = ChatOllama(
+            model=self.llm_model,
+            temperature=0.7,
+            base_url=self.ollama_base_url
+        )
         
         # Initialize text splitter
         self.text_splitter = RecursiveCharacterTextSplitter(
@@ -52,10 +45,7 @@ class RAGPipeline:
     def _load_vector_store(self):
         """Load or create the Chroma vector store"""
         try:
-            if self.openai_api_key:
-                embedding_function = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            else:
-                embedding_function = HuggingFaceEmbeddings(model_name=self.embedding_model)
+            embedding_function = HuggingFaceEmbeddings(model_name=self.embedding_model)
             
             self.vector_store = Chroma(
                 persist_directory=self.vector_store_path,
@@ -64,10 +54,7 @@ class RAGPipeline:
         except Exception as e:
             print(f"Error loading vector store: {e}")
             # Create new vector store if it doesn't exist
-            if self.openai_api_key:
-                embedding_function = OpenAIEmbeddings(openai_api_key=self.openai_api_key)
-            else:
-                embedding_function = HuggingFaceEmbeddings(model_name=self.embedding_model)
+            embedding_function = HuggingFaceEmbeddings(model_name=self.embedding_model)
             
             self.vector_store = Chroma(
                 persist_directory=self.vector_store_path,
@@ -109,7 +96,7 @@ class RAGPipeline:
             self._load_vector_store()
         
         self.vector_store.add_documents(chunks)
-        self.vector_store.persist()
+        # Note: Chroma 0.4.x automatically persists, no need to call persist()
         
         return len(chunks)
     
@@ -137,7 +124,7 @@ Do not make up information that is not in the context.
 Context:
 {context}
 
-Question: {question}
+Question: {input}
 
 Provide a clear, detailed answer based only on the context provided:"""
         

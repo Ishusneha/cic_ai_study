@@ -55,4 +55,4 @@ Thumbs.db
 *.log
 
 
-cic/
+node_modules/
